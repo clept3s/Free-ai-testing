@@ -1,22 +1,9 @@
-const CACHE_NAME = 'learnai-static-v1';
-const ASSETS_TO_CACHE = [
-    '/',
-    '/index.html',
-    '/manifest.json',
-    '/icon-192.png',
-    '/icon-512.png',
-    '/service-worker.js'
-];
+const CACHE_NAME = 'learnai-static-v2';
 
-// Install – cache static assets
 self.addEventListener('install', event => {
-    event.waitUntil(
-        caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS_TO_CACHE))
-    );
     self.skipWaiting();
 });
 
-// Activate – clean old caches
 self.addEventListener('activate', event => {
     event.waitUntil(
         caches.keys().then(keys =>
@@ -28,18 +15,37 @@ self.addEventListener('activate', event => {
     self.clients.claim();
 });
 
-// Fetch – cache‑first for static assets, network‑only for API calls
 self.addEventListener('fetch', event => {
     const url = new URL(event.request.url);
-    // Do NOT cache POST /generate or any API request
+
+    // NEVER cache/intercept API calls (POST /generate)
     if (event.request.method !== 'GET' || url.pathname.startsWith('/generate')) {
-        return; // let the request go to network
+        return;
     }
 
-    // Cache‑first strategy for static assets
+    // For HTML/navigation: NETWORK-FIRST (always get fresh page, cache as fallback)
+    if (event.request.mode === 'navigate' || url.pathname === '/' || url.pathname.endsWith('.html')) {
+        event.respondWith(
+            fetch(event.request)
+                .then(response => {
+                    const copy = response.clone();
+                    caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
+                    return response;
+                })
+                .catch(() => caches.match(event.request))
+        );
+        return;
+    }
+
+    // For other static assets (icons etc): CACHE-FIRST
     event.respondWith(
-        caches.match(event.request).then(cached => {
-            return cached || fetch(event.request);
-        })
+        caches.match(event.request).then(cached =>
+            cached ||
+            fetch(event.request).then(response => {
+                const copy = response.clone();
+                caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
+                return response;
+            })
+        )
     );
 });
