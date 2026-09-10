@@ -13,18 +13,16 @@ jobs:
       id-token: write
 
     steps:
-      # 1️⃣ Checkout the repository
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2️⃣ Package the static files (everything except the backend folder)
+      # No build step needed – the site is pure static files.
       - name: Upload artifact for GitHub Pages
         uses: actions/upload-pages-artifact@v3
         with:
           path: .
-          # The backend folder is ignored automatically by GitHub Pages.
+          # The backend folder (if you ever add one) is ignored automatically.
 
-      # 3️⃣ Deploy the artifact to GitHub Pages
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
