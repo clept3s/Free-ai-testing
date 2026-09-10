@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#4A90E2">
     <link rel="manifest" href="manifest.json">
-    <link rel="icon" href="icon-192.png">
     <style>
         :root { --primary:#4A90E2; --bg:#f9fafb; --text:#333; }
         body{margin:0;font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);}
@@ -94,7 +93,7 @@ function setLoading(isLoading) {
 async function callBackend(message) {
     const payload = { message };
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 120000); // 2‑min max
+    const timeout = setTimeout(() => controller.abort(), 120000);
 
     try {
         const resp = await fetch(`${API_URL}/generate`, {

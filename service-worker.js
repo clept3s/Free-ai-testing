@@ -2,9 +2,7 @@ const CACHE_NAME = 'learnai-static-v1';
 const ASSETS_TO_CACHE = [
     '/',
     '/index.html',
-    '/manifest.json',
-    '/icon-192.png',
-    '/icon-512.png'
+    '/manifest.json'
 ];
 
 self.addEventListener('install', event => {
@@ -28,7 +26,7 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
     const url = new URL(event.request.url);
     if (event.request.method !== 'GET' || url.pathname.startsWith('/generate')) {
-        return; // let the request go to network
+        return;
     }
     event.respondWith(
         caches.match(event.request).then(cached => {

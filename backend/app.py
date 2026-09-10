@@ -99,7 +99,7 @@ def build_prompt(user_message: str) -> str:
     return f"SYSTEM:\n{SYSTEM_PROMPT}\n\nUSER:\n{user_message}"
 
 @app.route("/", methods=["GET"])
-def health():
+ndef health():
     return jsonify({
         "status": "online",
         "model": MODEL_NAME,
@@ -107,7 +107,7 @@ def health():
     })
 
 @app.route("/generate", methods=["POST", "OPTIONS"])
-def generate():
+ndef generate():
     # CORS preflight handling
     if request.method == "OPTIONS":
         logging.info("CORS preflight received for /generate")
