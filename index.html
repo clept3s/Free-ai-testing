@@ -1,150 +1,252 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <meta name="theme-color"
+          content="#0f1117">
+
+    <meta name="description"
+          content="LearnAI creates personalized learning plans using AI.">
+
+    <link rel="manifest"
+          href="manifest.json">
+
+    <link rel="icon"
+          href="icon-192.png">
 
     <title>LearnAI</title>
 
+
     <style>
+
         * {
             box-sizing: border-box;
         }
 
         body {
+
             margin: 0;
+
             min-height: 100vh;
 
-            font-family: Arial, sans-serif;
+            font-family:
+                Arial,
+                sans-serif;
 
             background: #0f1117;
+
             color: white;
 
             display: flex;
+
             justify-content: center;
+
             align-items: center;
+
         }
+
 
         .container {
-            width: min(800px, 92%);
 
-            background: #181b24;
+            width:
+                min(800px, 92%);
 
-            border: 1px solid #292d38;
-            border-radius: 18px;
+            background:
+                #181b24;
 
-            padding: 30px;
+            border:
+                1px solid #292d38;
+
+            border-radius:
+                18px;
+
+            padding:
+                30px;
+
         }
+
 
         h1 {
+
             margin-top: 0;
+
         }
+
 
         p {
+
             color: #aaa;
+
         }
 
+
         textarea {
+
             width: 100%;
+
             height: 180px;
 
             resize: vertical;
 
-            background: #101218;
+            background:
+                #101218;
+
             color: white;
 
-            border: 1px solid #303541;
-            border-radius: 12px;
+            border:
+                1px solid #303541;
 
-            padding: 15px;
+            border-radius:
+                12px;
 
-            font-size: 16px;
+            padding:
+                15px;
+
+            font-size:
+                16px;
 
             outline: none;
+
         }
+
 
         textarea:focus {
-            border-color: #666;
+
+            border-color:
+                #666;
+
         }
+
 
         button {
-            margin-top: 15px;
-            padding: 12px 20px;
 
-            border: none;
-            border-radius: 10px;
+            margin-top:
+                15px;
 
-            background: white;
-            color: #111;
+            padding:
+                12px 20px;
 
-            font-weight: bold;
+            border:
+                none;
 
-            cursor: pointer;
+            border-radius:
+                10px;
+
+            background:
+                white;
+
+            color:
+                #111;
+
+            font-weight:
+                bold;
+
+            cursor:
+                pointer;
+
         }
+
 
         button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
+
+            opacity:
+                0.5;
+
+            cursor:
+                not-allowed;
+
         }
+
 
         #status {
-            margin-top: 15px;
-            color: #aaa;
+
+            margin-top:
+                15px;
+
+            color:
+                #aaa;
+
         }
+
 
         #output {
-            margin-top: 25px;
 
-            white-space: pre-wrap;
+            margin-top:
+                25px;
 
-            line-height: 1.6;
+            white-space:
+                pre-wrap;
+
+            line-height:
+                1.6;
+
         }
+
     </style>
+
 </head>
+
 
 <body>
 
+
 <div class="container">
 
-    <h1>LearnAI</h1>
+    <h1>
+        LearnAI
+    </h1>
+
 
     <p>
-        Tell the AI about yourself, what you want to learn,
-        and how you prefer to learn.
+        Tell LearnAI about yourself and what you want to learn.
+        The AI will create a personalized learning approach.
     </p>
+
 
     <textarea
         id="input"
-        placeholder="Example: I'm trying to learn Python. I'm a beginner, I get bored with long explanations, and I have about 30 minutes per day..."
+        placeholder="Example: I want to learn Python. I'm a beginner, I get bored with long explanations, and I have about 30 minutes per day..."
     ></textarea>
 
+
     <br>
+
 
     <button id="generate">
         Generate learning plan
     </button>
 
+
     <div id="status">
-        Connecting to AI server...
+        Ready.
     </div>
+
 
     <div id="output"></div>
 
 </div>
 
+
 <script>
 
     /*
-        IMPORTANT:
+     * CHANGE THIS
+     *
+     * Put the URL of your deployed Python backend here.
+     *
+     * Example:
+     *
+     * https://learnai-api.example.com
+     */
 
-        Replace this with the URL of your Python backend.
-
-        Example:
-
-        https://your-ai-server.example.com
-    */
-
-    const API_URL = "YOUR_BACKEND_URL";
+    const API_URL =
+        "YOUR_BACKEND_URL";
 
 
     const input =
@@ -160,88 +262,145 @@
         document.getElementById("output");
 
 
-    generateButton.addEventListener("click", async () => {
+    // ==========================================
+    // GENERATE
+    // ==========================================
 
-        const userText =
-            input.value.trim();
+    generateButton.addEventListener(
+        "click",
+        async () => {
 
-
-        if (!userText) {
-
-            output.textContent =
-                "Tell me something about yourself first.";
-
-            return;
-        }
+            const message =
+                input.value.trim();
 
 
-        generateButton.disabled = true;
+            if (!message) {
 
-        status.textContent =
-            "AI is thinking...";
+                output.textContent =
+                    "Tell me about yourself first.";
 
-        output.textContent =
-            "";
-
-
-        try {
-
-            const response = await fetch(
-                `${API_URL}/generate`,
-                {
-                    method: "POST",
-
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-
-                    body: JSON.stringify({
-                        message: userText
-                    })
-                }
-            );
-
-
-            if (!response.ok) {
-
-                throw new Error(
-                    `Server returned ${response.status}`
-                );
+                return;
 
             }
 
 
-            const data =
-                await response.json();
-
-
-            output.textContent =
-                data.response;
+            generateButton.disabled =
+                true;
 
 
             status.textContent =
-                "Response generated by the server-side AI.";
+                "LearnAI is thinking...";
 
-        }
-
-        catch (error) {
-
-            console.error(error);
-
-            status.textContent =
-                "Could not connect to the AI server.";
 
             output.textContent =
-                "Error: " + error.message;
+                "";
+
+
+            try {
+
+                const response =
+                    await fetch(
+                        `${API_URL}/generate`,
+                        {
+
+                            method:
+                                "POST",
+
+                            headers: {
+                                "Content-Type":
+                                    "application/json"
+                            },
+
+                            body:
+                                JSON.stringify({
+                                    message:
+                                        message
+                                })
+
+                        }
+                    );
+
+
+                if (!response.ok) {
+
+                    throw new Error(
+                        `Server error: ${response.status}`
+                    );
+
+                }
+
+
+                const data =
+                    await response.json();
+
+
+                output.textContent =
+                    data.response;
+
+
+                status.textContent =
+                    "Learning plan generated.";
+
+            }
+
+
+            catch (error) {
+
+                console.error(error);
+
+
+                status.textContent =
+                    "Could not connect to the AI server.";
+
+
+                output.textContent =
+                    error.message;
+
+            }
+
+
+            finally {
+
+                generateButton.disabled =
+                    false;
+
+            }
 
         }
+    );
 
 
-        generateButton.disabled = false;
+    // ==========================================
+    // PWA SERVICE WORKER
+    // ==========================================
 
-    });
+    if ("serviceWorker" in navigator) {
+
+        window.addEventListener(
+            "load",
+            () => {
+
+                navigator.serviceWorker
+                    .register(
+                        "service-worker.js"
+                    )
+                    .catch(
+                        error => {
+                            console.error(
+                                "Service worker error:",
+                                error
+                            );
+                        }
+                    );
+
+            }
+        );
+
+    }
 
 </script>
 
+
 </body>
+
 </html>
