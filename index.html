@@ -1,406 +1,151 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-
     <meta charset="UTF-8">
-
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
-
-    <meta name="theme-color"
-          content="#0f1117">
-
-    <meta name="description"
-          content="LearnAI creates personalized learning plans using AI.">
-
-    <link rel="manifest"
-          href="manifest.json">
-
-    <link rel="icon"
-          href="icon-192.png">
-
-    <title>LearnAI</title>
-
-
+    <title>LearnAI – Personalized Learning Recommendations</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#4A90E2">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="icon-192.png">
     <style>
-
-        * {
-            box-sizing: border-box;
+        :root { --primary:#4A90E2; --bg:#f9fafb; --text:#333; }
+        body{margin:0;font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);}
+        .container{max-width:800px;margin:auto;padding:1rem;}
+        header{display:flex;align-items:center;justify-content:center;padding:1rem 0;}
+        h1{margin:0;font-size:2rem;color:var(--primary);}
+        textarea{
+            width:100%;min-height:150px;padding:0.8rem;border:1px solid #ccc;
+            border-radius:4px;font-size:1rem;resize:vertical;
         }
-
-        body {
-
-            margin: 0;
-
-            min-height: 100vh;
-
-            font-family:
-                Arial,
-                sans-serif;
-
-            background: #0f1117;
-
-            color: white;
-
-            display: flex;
-
-            justify-content: center;
-
-            align-items: center;
-
+        button{
+            background:var(--primary);color:#fff;border:none;padding:0.6rem 1.2rem;
+            border-radius:4px;font-size:1rem;cursor:pointer;margin-top:0.5rem;
         }
-
-
-        .container {
-
-            width:
-                min(800px, 92%);
-
-            background:
-                #181b24;
-
-            border:
-                1px solid #292d38;
-
-            border-radius:
-                18px;
-
-            padding:
-                30px;
-
-        }
-
-
-        h1 {
-
-            margin-top: 0;
-
-        }
-
-
-        p {
-
-            color: #aaa;
-
-        }
-
-
-        textarea {
-
-            width: 100%;
-
-            height: 180px;
-
-            resize: vertical;
-
-            background:
-                #101218;
-
-            color: white;
-
-            border:
-                1px solid #303541;
-
-            border-radius:
-                12px;
-
-            padding:
-                15px;
-
-            font-size:
-                16px;
-
-            outline: none;
-
-        }
-
-
-        textarea:focus {
-
-            border-color:
-                #666;
-
-        }
-
-
-        button {
-
-            margin-top:
-                15px;
-
-            padding:
-                12px 20px;
-
-            border:
-                none;
-
-            border-radius:
-                10px;
-
-            background:
-                white;
-
-            color:
-                #111;
-
-            font-weight:
-                bold;
-
-            cursor:
-                pointer;
-
-        }
-
-
-        button:disabled {
-
-            opacity:
-                0.5;
-
-            cursor:
-                not-allowed;
-
-        }
-
-
-        #status {
-
-            margin-top:
-                15px;
-
-            color:
-                #aaa;
-
-        }
-
-
-        #output {
-
-            margin-top:
-                25px;
-
-            white-space:
-                pre-wrap;
-
-            line-height:
-                1.6;
-
-        }
-
+        button:disabled{background:#999;cursor:not-allowed;}
+        #response{margin-top:1rem;padding:1rem;background:#fff;border:1px solid #e0e0e0;
+            border-radius:4px;white-space:pre-wrap;}
+        #status{margin-top:0.5rem;font-size:0.9rem;color:#666;}
+        #error{margin-top:0.5rem;color:#c00;}
+        .install-btn{margin-top:1rem;background:#fff;color:var(--primary);
+            border:1px solid var(--primary);padding:0.5rem 1rem;border-radius:4px;cursor:pointer;}
     </style>
-
 </head>
-
-
 <body>
-
-
 <div class="container">
+    <header><h1>LearnAI</h1></header>
 
-    <h1>
-        LearnAI
-    </h1>
+    <label for="userInput">Tell me about yourself and what you want to learn:</label>
+    <textarea id="userInput" placeholder="I want to learn C++..."></textarea>
 
+    <button id="generateBtn">Generate Recommendation</button>
+    <button id="installBtn" class="install-btn" style="display:none;">Install LearnAI</button>
 
-    <p>
-        Tell LearnAI about yourself and what you want to learn.
-        The AI will create a personalized learning approach.
-    </p>
-
-
-    <textarea
-        id="input"
-        placeholder="Example: I want to learn Python. I'm a beginner, I get bored with long explanations, and I have about 30 minutes per day..."
-    ></textarea>
-
-
-    <br>
-
-
-    <button id="generate">
-        Generate learning plan
-    </button>
-
-
-    <div id="status">
-        Ready.
-    </div>
-
-
-    <div id="output"></div>
-
+    <div id="status"></div>
+    <div id="error" role="alert"></div>
+    <pre id="response" aria-live="polite"></pre>
 </div>
 
-
 <script>
+/* ---- CONFIGURATION --------------------------------------------------- */
+// 👉 ONE PLACE TO INSERT YOUR BACKEND URL AFTER DEPLOYMENT
+const API_URL = "https://YOUR-BACKEND-URL";   // <‑‑ replace with real URL
+/* ---------------------------------------------------------------------- */
 
-    /*
-     * CHANGE THIS
-     *
-     * Put the URL of your deployed Python backend here.
-     *
-     * Example:
-     *
-     * https://learnai-api.example.com
-     */
+const generateBtn = document.getElementById('generateBtn');
+const userInput   = document.getElementById('userInput');
+const responseBox = document.getElementById('response');
+const statusBox   = document.getElementById('status');
+const errorBox    = document.getElementById('error');
+const installBtn  = document.getElementById('installBtn');
 
-    const API_URL =
-        "YOUR_BACKEND_URL";
+let deferredPrompt = null;
 
+// Service‑worker registration
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('service-worker.js')
+        .then(() => console.log('Service Worker registered'))
+        .catch(err => console.error('SW registration failed', err));
+}
 
-    const input =
-        document.getElementById("input");
-
-    const generateButton =
-        document.getElementById("generate");
-
-    const status =
-        document.getElementById("status");
-
-    const output =
-        document.getElementById("output");
-
-
-    // ==========================================
-    // GENERATE
-    // ==========================================
-
-    generateButton.addEventListener(
-        "click",
-        async () => {
-
-            const message =
-                input.value.trim();
-
-
-            if (!message) {
-
-                output.textContent =
-                    "Tell me about yourself first.";
-
-                return;
-
-            }
-
-
-            generateButton.disabled =
-                true;
-
-
-            status.textContent =
-                "LearnAI is thinking...";
-
-
-            output.textContent =
-                "";
-
-
-            try {
-
-                const response =
-                    await fetch(
-                        `${API_URL}/generate`,
-                        {
-
-                            method:
-                                "POST",
-
-                            headers: {
-                                "Content-Type":
-                                    "application/json"
-                            },
-
-                            body:
-                                JSON.stringify({
-                                    message:
-                                        message
-                                })
-
-                        }
-                    );
-
-
-                if (!response.ok) {
-
-                    throw new Error(
-                        `Server error: ${response.status}`
-                    );
-
-                }
-
-
-                const data =
-                    await response.json();
-
-
-                output.textContent =
-                    data.response;
-
-
-                status.textContent =
-                    "Learning plan generated.";
-
-            }
-
-
-            catch (error) {
-
-                console.error(error);
-
-
-                status.textContent =
-                    "Could not connect to the AI server.";
-
-
-                output.textContent =
-                    error.message;
-
-            }
-
-
-            finally {
-
-                generateButton.disabled =
-                    false;
-
-            }
-
-        }
-    );
-
-
-    // ==========================================
-    // PWA SERVICE WORKER
-    // ==========================================
-
-    if ("serviceWorker" in navigator) {
-
-        window.addEventListener(
-            "load",
-            () => {
-
-                navigator.serviceWorker
-                    .register(
-                        "service-worker.js"
-                    )
-                    .catch(
-                        error => {
-                            console.error(
-                                "Service worker error:",
-                                error
-                            );
-                        }
-                    );
-
-            }
-        );
-
+// PWA install handling
+window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    deferredPrompt = e;
+    installBtn.style.display = 'inline-block';
+});
+installBtn.addEventListener('click', async () => {
+    if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log('User response to the install prompt:', outcome);
+        deferredPrompt = null;
+        installBtn.style.display = 'none';
     }
+});
 
+function setLoading(isLoading) {
+    generateBtn.disabled = isLoading;
+    generateBtn.textContent = isLoading ? 'Thinking…' : 'Generate Recommendation';
+    statusBox.textContent = isLoading ? 'LearnAI is thinking…' : '';
+    errorBox.textContent = '';
+    if (!isLoading) responseBox.textContent = '';
+}
+
+async function callBackend(message) {
+    const payload = { message };
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 120000); // 2‑min max
+
+    try {
+        const resp = await fetch(`${API_URL}/generate`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+            signal: controller.signal
+        });
+        clearTimeout(timeout);
+        if (!resp.ok) {
+            const err = await resp.json().catch(() => ({}));
+            throw { status: resp.status, body: err };
+        }
+        const data = await resp.json();
+        return data.response;
+    } catch (e) {
+        if (e.name === 'AbortError') throw { status: 0, body: { error: 'Request timed out' } };
+        throw e;
+    }
+}
+
+generateBtn.addEventListener('click', async () => {
+    const msg = userInput.value.trim();
+    if (!msg) {
+        errorBox.textContent = 'Please enter some information first.';
+        return;
+    }
+    setLoading(true);
+    try {
+        const answer = await callBackend(msg);
+        responseBox.textContent = answer;
+    } catch (err) {
+        console.error(err);
+        if (err.status === 0) {
+            errorBox.textContent = 'Could not reach the AI server.';
+        } else if (err.status === 400) {
+            errorBox.textContent = 'Invalid request.';
+        } else if (err.status === 405) {
+            errorBox.textContent = 'AI server rejected the request method.';
+        } else if (err.status === 500) {
+            errorBox.textContent = 'AI server encountered an internal error.';
+        } else {
+            errorBox.textContent = `Server error: ${err.status}`;
+        }
+        if (err.body && err.body.error) {
+            errorBox.textContent += ` – ${err.body.error}`;
+        }
+    } finally {
+        setLoading(false);
+    }
+});
 </script>
-
-
 </body>
-
 </html>
