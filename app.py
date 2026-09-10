@@ -1,57 +1,87 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-
 from transformers import AutoTokenizer, AutoModelForCausalLM
+import torch
+import os
 
 app = Flask(__name__)
-CORS(app)
+
+# Allow the GitHub Pages frontend to communicate with the backend
+CORS(
+    app,
+    resources={
+        r"/generate": {
+            "origins": "*"
+        }
+    },
+    methods=["POST", "OPTIONS"],
+    allow_headers=["Content-Type"]
+)
 
 MODEL_NAME = "Qwen/Qwen3-0.6B"
 
-print("Loading tokenizer...")
-tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
-
 print("Loading model...")
+tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
 model = AutoModelForCausalLM.from_pretrained(
     MODEL_NAME,
-    torch_dtype="auto",
-    device_map="auto"
+    torch_dtype=torch.float32
 )
 
-print("Model loaded.")
+print("Model loaded!")
 
 
 SYSTEM_PROMPT = """
 You are LearnAI's private recommendation engine.
 
-Determine how a specific person should learn something based
-on the information they provide.
+Your task is to determine how a specific person should learn
+something based on the information they provide.
 
-Consider their:
-- learning goal
-- current experience
-- available time
-- preferred learning methods
-- difficulties
-- motivation
-- constraints
+Analyze:
+1. Their learning goal
+2. Their current experience
+3. Their available time
+4. Their preferred learning methods
+5. Their difficulties
+6. Their motivation
+7. Their environment and constraints
 
-Choose appropriate techniques such as active recall,
-spaced repetition, practice exercises, project-based learning,
-worked examples, flashcards, quizzes, reading, videos,
-short focused sessions, progressive difficulty and feedback.
+Select appropriate learning techniques from:
+- Active recall
+- Spaced repetition
+- Practice exercises
+- Project-based learning
+- Worked examples
+- Flashcards
+- Quizzes
+- Reading
+- Videos
+- Short focused sessions
+- Progressive difficulty
+- Frequent feedback
 
 Do not blindly recommend every technique.
+Choose the techniques that best fit the individual.
+
+The recommendation should be practical rather than generic.
+
+If important information is missing, work with what is available
+rather than inventing facts.
 
 Return:
 
 LEARNING APPROACH
-WHY
-PLAN
-FIRST STEP
+Explain the recommended overall approach.
 
-Keep the answer practical and personalized.
-Do not invent information about the user.
+WHY
+Explain why it fits this person.
+
+PLAN
+Give a practical starting plan.
+
+FIRST STEP
+Give the user one concrete thing they can do first.
+
+Keep the response clear and useful.
 """
 
 
@@ -63,8 +93,12 @@ def home():
     })
 
 
-@app.route("/generate", methods=["POST"])
+@app.route("/generate", methods=["POST", "OPTIONS"])
 def generate():
+
+    # Handle browser CORS preflight
+    if request.method == "OPTIONS":
+        return "", 204
 
     data = request.get_json(silent=True)
 
@@ -73,44 +107,35 @@ def generate():
             "error": "Missing message"
         }), 400
 
-    user_message = str(data["message"])
+    user_message = data["message"]
 
-    messages = [
-        {
-            "role": "system",
-            "content": SYSTEM_PROMPT
-        },
-        {
-            "role": "user",
-            "content": user_message
-        }
-    ]
+    prompt = f"""
+{SYSTEM_PROMPT}
 
-    text = tokenizer.apply_chat_template(
-        messages,
-        tokenize=False,
-        add_generation_prompt=True
-    )
+USER:
+{user_message}
+
+ASSISTANT:
+"""
 
     inputs = tokenizer(
-        text,
+        prompt,
         return_tensors="pt"
-    ).to(model.device)
-
-    outputs = model.generate(
-        **inputs,
-        max_new_tokens=400,
-        temperature=0.7,
-        do_sample=True,
-        repetition_penalty=1.05
     )
 
-    generated_tokens = outputs[0][
-        inputs["input_ids"].shape[1]:
-    ]
+    with torch.no_grad():
+        outputs = model.generate(
+            **inputs,
+            max_new_tokens=500,
+            temperature=0.7,
+            do_sample=True,
+            pad_token_id=tokenizer.eos_token_id
+        )
+
+    generated = outputs[0][inputs["input_ids"].shape[1]:]
 
     answer = tokenizer.decode(
-        generated_tokens,
+        generated,
         skip_special_tokens=True
     )
 
@@ -120,7 +145,9 @@ def generate():
 
 
 if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 8000))
+
     app.run(
         host="0.0.0.0",
-        port=8000
+        port=port
     )
